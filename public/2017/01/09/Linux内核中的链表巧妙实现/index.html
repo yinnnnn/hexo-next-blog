@@ -1,0 +1,715 @@
+<!doctype html>
+
+
+
+
+<html class="theme-next mist" lang="zh-Hans">
+<head>
+  <meta charset="UTF-8"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
+
+
+
+<meta http-equiv="Cache-Control" content="no-transform" />
+<meta http-equiv="Cache-Control" content="no-siteapp" />
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  
+  <link href="/lib/fancybox/source/jquery.fancybox.css?v=2.1.5" rel="stylesheet" type="text/css" />
+
+
+
+
+  
+  
+  
+  
+
+  
+    
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+    
+    <link href="//fonts.googleapis.com/css?family=Lato:300,300italic,400,400italic,700,700italic&subset=latin,latin-ext" rel="stylesheet" type="text/css">
+  
+
+
+
+
+
+
+<link href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2" rel="stylesheet" type="text/css" />
+
+<link href="/css/main.css?v=5.1.0" rel="stylesheet" type="text/css" />
+
+
+  <meta name="keywords" content="Linux内核," />
+
+
+
+
+
+
+
+
+  <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico?v=5.1.0" />
+
+
+
+
+
+
+<meta name="description" content="定义链表是我们学习数据结构课程中首先学的并且是最为基础且最重要的一种数据结构类型。可以用一种最简单的数据结构来表示这样的一个链表：1234struct list_element&amp;#123;	void* data;	struct list_element* next;&amp;#125;;
+双向链表：12345struct list_element&amp;#123;	void* data;	struct list">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Linux内核中的链表巧妙实现">
+<meta property="og:url" content="http://wufazuce.com/2017/01/09/Linux内核中的链表巧妙实现/index.html">
+<meta property="og:site_name" content="yinn小站">
+<meta property="og:description" content="定义链表是我们学习数据结构课程中首先学的并且是最为基础且最重要的一种数据结构类型。可以用一种最简单的数据结构来表示这样的一个链表：1234struct list_element&amp;#123;	void* data;	struct list_element* next;&amp;#125;;
+双向链表：12345struct list_element&amp;#123;	void* data;	struct list">
+<meta property="og:updated_time" content="2017-01-09T15:13:49.092Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Linux内核中的链表巧妙实现">
+<meta name="twitter:description" content="定义链表是我们学习数据结构课程中首先学的并且是最为基础且最重要的一种数据结构类型。可以用一种最简单的数据结构来表示这样的一个链表：1234struct list_element&amp;#123;	void* data;	struct list_element* next;&amp;#125;;
+双向链表：12345struct list_element&amp;#123;	void* data;	struct list">
+
+
+
+<script type="text/javascript" id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Mist',
+    sidebar: {"position":"left","display":"post"},
+    fancybox: true,
+    motion: false,
+    duoshuo: {
+      userId: '6373086759810500000',
+      author: '博主'
+    },
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+
+  <link rel="canonical" href="http://wufazuce.com/2017/01/09/Linux内核中的链表巧妙实现/"/>
+
+
+
+
+
+  <title> Linux内核中的链表巧妙实现 | yinn小站 </title>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-Hans">
+
+  
+
+
+
+
+
+
+
+
+
+
+  
+  
+    
+  
+
+  <div class="container one-collumn sidebar-position-left page-post-detail ">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-meta ">
+  
+
+  <div class="custom-logo-site-title">
+    <a href="/"  class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <span class="site-title">yinn小站</span>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+    
+      <p class="site-subtitle"></p>
+    
+</div>
+
+<div class="site-nav-toggle">
+  <button>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+    <span class="btn-bar"></span>
+  </button>
+</div>
+
+<nav class="site-nav">
+  
+
+  
+    <ul id="menu" class="menu">
+      
+        
+        <li class="menu-item menu-item-home">
+          <a href="/" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-home"></i> <br />
+            
+            首页
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-categories">
+          <a href="/categories" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-th"></i> <br />
+            
+            分类
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-archives">
+          <a href="/archives" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-archive"></i> <br />
+            
+            归档
+          </a>
+        </li>
+      
+        
+        <li class="menu-item menu-item-tags">
+          <a href="/tags" rel="section">
+            
+              <i class="menu-item-icon fa fa-fw fa-tags"></i> <br />
+            
+            标签
+          </a>
+        </li>
+      
+
+      
+    </ul>
+  
+
+  
+</nav>
+
+
+
+ </div>
+    </header>
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+   <article class="post post-type-normal " itemscope itemtype="http://schema.org/Article">
+
+<link itemprop="mainEntityOfPage" href="http://wufazuce.com/2017/01/09/Linux内核中的链表巧妙实现/">
+
+  <span style="display:none" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <meta itemprop="name" content="yinn">
+    <meta itemprop="description" content="">
+    <meta itemprop="image" content="/images/avatar.gif">
+  </span>
+
+  <span style="display:none" itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+    <meta itemprop="name" content="yinn小站">
+    <span style="display:none" itemprop="logo" itemscope itemtype="http://schema.org/ImageObject">
+      <img style="display:none;" itemprop="url image" alt="yinn小站" src="">
+    </span>
+  </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">
+            
+            
+              
+                Linux内核中的链表巧妙实现
+              
+            
+          </h1>
+        
+
+
+        <div class="post-meta">
+
+
+          <span class="post-time">
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+              <time title="Post created" itemprop="dateCreated datePublished" datetime="2017-01-09T23:11:19+08:00">
+                2017-01-09
+              </time>
+            
+
+            
+
+            
+          </span>
+
+          
+
+          
+            
+          
+
+          
+
+          
+          
+
+          
+            <span class="post-meta-divider">|</span>
+            <span class="page-pv"><i class="fa fa-file-o"></i>
+            <span class="busuanzi-value" id="busuanzi_value_page_pv" ></span>
+            </span>
+          
+
+          
+
+        </div>
+      </header>
+    
+
+
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <h2 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h2><p>链表是我们学习数据结构课程中首先学的并且是最为基础且最重要的一种数据结构类型。<br>可以用一种最简单的数据结构来表示这样的一个链表：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> list_element&#123;</div><div class="line">	<span class="keyword">void</span>* data;</div><div class="line">	<span class="keyword">struct</span> list_element* next;</div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
+<p>双向链表：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> list_element&#123;</div><div class="line">	<span class="keyword">void</span>* data;</div><div class="line">	<span class="keyword">struct</span> list_element* pre;</div><div class="line">	<span class="keyword">struct</span> list_element* next;</div><div class="line">&#125;;</div></pre></td></tr></table></figure></p>
+<h2 id="Linux内核中的实现"><a href="#Linux内核中的实现" class="headerlink" title="Linux内核中的实现"></a>Linux内核中的实现</h2><p>相比普通的链表实现方式，Linux内核的实现可以说独树一帜。前面提到的数据通过内部添加一个指向数据的next（或者pre）节点指针，才能串联在链表中。比如，假设我们有一个fox数据结构来表述狐狸：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> fox &#123;</div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> tail_length;<span class="comment">//尾巴长度</span></div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> weight;<span class="comment">//重量</span></div><div class="line">    <span class="keyword">bool</span> is_fantastic;<span class="comment">//是否奇妙</span></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>存储这个结构到链表里的通常方法是在数据结构中嵌入一个链表指针，比如：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> fox &#123;</div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> tail_length;<span class="comment">//尾巴长度</span></div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> weight;<span class="comment">//重量</span></div><div class="line">    <span class="keyword">bool</span> is_fantastic;<span class="comment">//是否奇妙</span></div><div class="line">    <span class="keyword">struct</span> fox *next;</div><div class="line">    <span class="keyword">struct</span> fox *prev;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><strong>Linux内核方式与众不同，它不是将数据结构塞入链表，而是将链表节点塞入数据结构！！</strong><br>链表代码在头文件<code>&lt;linux/list.h&gt;</code>其数据结构很简单：<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> list_head &#123;</div><div class="line">    <span class="keyword">struct</span> list_head *next;</div><div class="line">    <span class="keyword">struct</span> list_head *prev;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p><code>next</code>指针指向下一个链表节点，<code>prev</code>指针指向前一个。然而，似乎这里还看不出它们有多大作用。到底什么才是链表存储的具体内容呢？其实关键在于理解<code>list_head</code>结构是如何使用的。<br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div></pre></td><td class="code"><pre><div class="line"><span class="keyword">struct</span> fox &#123;</div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> tail_length;<span class="comment">//尾巴长度</span></div><div class="line">    <span class="keyword">unsigned</span> <span class="keyword">long</span> weight;<span class="comment">//重量</span></div><div class="line">    <span class="keyword">bool</span> is_fantastic;<span class="comment">//是否奇妙 </span></div><div class="line">    <span class="keyword">struct</span> list_head <span class="built_in">list</span>;<span class="comment">//所有fox结构体形成链表</span></div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>上述结构中，fox中的<code>list.next</code>指向下一个元素，<code>list.prev</code>指向前一个元素。现在链表已经能用了，但是显然还不够方便。因此<strong>内核又提供了一组链表操作例程。</strong>比如，<code>list_add()</code>方法假如一个新节点到链表中。但是，这些方法都有一个统一的特点：它们只接受list_head结构作为参数。使用宏<code>container_of()</code>我们可以很方便地从链表指针找到父结构中包含的任何变量。<strong>这是因为在C语言中，一个给定结构中的变量偏移在编译时地址就被ABI固定下来了。</strong><br><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">define</span> container_of(ptr, type, member) \</span></div><div class="line">    (type *)((char *)(ptr) - (char *) &amp;((type *)0)-&gt;member)</div></pre></td></tr></table></figure></p>
+<h2 id="操作链表"><a href="#操作链表" class="headerlink" title="操作链表"></a>操作链表</h2><ul>
+<li>增加节点：<blockquote>
+<p>list_add(struct list_head <em>new,struct list_head </em>head);</p>
+</blockquote>
+</li>
+<li>删除节点：<blockquote>
+<p>list_del(struct list_head *entry);</p>
+</blockquote>
+</li>
+<li>移动和合并链表节点<blockquote>
+<p>list_move(struct list_head <em>list,struct list_head </em>head);</p>
+</blockquote>
+</li>
+<li>较差链表是否为空：<blockquote>
+<p>list_empty(struct list_head *head);</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="遍历链表"><a href="#遍历链表" class="headerlink" title="遍历链表"></a>遍历链表</h2><ul>
+<li>常用的遍历方法<blockquote>
+<p>list_for_each_entry(pos,head,member)</p>
+</blockquote>
+</li>
+<li>反向遍历<blockquote>
+<p>list_for_each_entry_reverse(pos,head,member);</p>
+</blockquote>
+</li>
+<li>遍历的同时删除<blockquote>
+<p>list_for_each_entry_safe(pos,next,head,member);</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="完整例程"><a href="#完整例程" class="headerlink" title="完整例程"></a>完整例程</h2><figure class="highlight cpp"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div><div class="line">19</div><div class="line">20</div><div class="line">21</div><div class="line">22</div><div class="line">23</div><div class="line">24</div><div class="line">25</div><div class="line">26</div><div class="line">27</div><div class="line">28</div><div class="line">29</div><div class="line">30</div><div class="line">31</div><div class="line">32</div><div class="line">33</div><div class="line">34</div><div class="line">35</div><div class="line">36</div><div class="line">37</div><div class="line">38</div><div class="line">39</div><div class="line">40</div><div class="line">41</div></pre></td><td class="code"><pre><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stddef.h&gt;</span></span></div><div class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">"include/list.h"</span></span></div><div class="line"></div><div class="line"><span class="keyword">struct</span> foo&#123;</div><div class="line">    <span class="keyword">int</span> id;</div><div class="line">    <span class="keyword">struct</span> list_head entry;</div><div class="line">&#125;;</div><div class="line"></div><div class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</div><div class="line">    <span class="built_in">printf</span>(<span class="string">"hello world!\n"</span>);</div><div class="line">    <span class="keyword">struct</span> foo fo;</div><div class="line">    INIT_LIST_HEAD(&amp;fo.entry);</div><div class="line"></div><div class="line">    <span class="keyword">struct</span> foo *first = (<span class="keyword">struct</span> foo *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> foo));</div><div class="line">    <span class="keyword">struct</span> foo *second= (<span class="keyword">struct</span> foo *)<span class="built_in">malloc</span>(<span class="keyword">sizeof</span>(<span class="keyword">struct</span> foo));</div><div class="line">    first-&gt;id = <span class="number">999</span>;</div><div class="line">    second-&gt;id = <span class="number">888</span>;</div><div class="line">    list_add(&amp;first-&gt;entry,&amp;fo.entry);</div><div class="line">    list_add_tail(&amp;second-&gt;entry,&amp;fo.entry);</div><div class="line"></div><div class="line">    <span class="keyword">struct</span> foo *iterator;</div><div class="line">    list_for_each_entry(iterator, &amp;fo.entry, entry) &#123;</div><div class="line">        <span class="built_in">printf</span>(<span class="string">"id=%d\n"</span>,iterator-&gt;id);</div><div class="line">    &#125;</div><div class="line"></div><div class="line">	<span class="keyword">struct</span> foo  *next;</div><div class="line">	list_for_each_entry_safe(iterator, next, &amp;fo.entry, entry) &#123;</div><div class="line">		<span class="comment">//	list_del(&amp;iterator-&gt;entry);</span></div><div class="line"><span class="comment">//		free(iterator);</span></div><div class="line">	&#125;</div><div class="line">	<span class="built_in">printf</span>(<span class="string">"empty ? %d\n"</span>,list_empty(&amp;fo.entry));</div><div class="line">	first = list_first_entry(&amp;fo.entry, <span class="keyword">struct</span> foo, entry);</div><div class="line"></div><div class="line">    list_for_each_entry(iterator, &amp;fo.entry, entry) &#123;</div><div class="line">        <span class="built_in">printf</span>(<span class="string">"id=%d\n"</span>,iterator-&gt;id);</div><div class="line">    &#125;</div><div class="line">	<span class="built_in">free</span>(first);</div><div class="line">	<span class="built_in">free</span>(second);</div><div class="line">&#125;</div></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+    <div>
+      
+        
+
+      
+    </div>
+
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Linux内核/" rel="tag"># Linux内核</a>
+          
+        </div>
+      
+
+      
+        <div class="post-nav">
+          <div class="post-nav-next post-nav-item">
+            
+              <a href="/2017/01/08/遍历链表和插入链表中循环的区别/" rel="next" title="遍历链表和插入链表中循环的区别">
+                <i class="fa fa-chevron-left"></i> 遍历链表和插入链表中循环的区别
+              </a>
+            
+          </div>
+
+          <span class="post-nav-divider"></span>
+
+          <div class="post-nav-prev post-nav-item">
+            
+              <a href="/2017/01/11/C实践小程序-原子和非原子-操作/" rel="prev" title="C实践小程序-原子和非原子++操作">
+                C实践小程序-原子和非原子++操作 <i class="fa fa-chevron-right"></i>
+              </a>
+            
+          </div>
+        </div>
+      
+
+      
+      
+    </footer>
+  </article>
+
+
+
+    <div class="post-spread">
+      
+    </div>
+  </div>
+
+          
+          </div>
+          
+
+
+          
+  <div class="comments" id="comments">
+    
+  </div>
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap" >
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <section class="site-overview sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <img class="site-author-image" itemprop="image"
+               src="/images/avatar.gif"
+               alt="yinn" />
+          <p class="site-author-name" itemprop="name">yinn</p>
+          <p class="site-description motion-element" itemprop="description">取悦自己</p>
+        </div>
+        <nav class="site-state motion-element">
+        
+          
+            <div class="site-state-item site-state-posts">
+              <a href="/archives">
+                <span class="site-state-item-count">4</span>
+                <span class="site-state-item-name">日志</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-categories">
+              <a href="/categories">
+                <span class="site-state-item-count">1</span>
+                <span class="site-state-item-name">分类</span>
+              </a>
+            </div>
+          
+
+          
+            <div class="site-state-item site-state-tags">
+              <a href="/tags">
+                <span class="site-state-item-count">2</span>
+                <span class="site-state-item-name">标签</span>
+              </a>
+            </div>
+          
+
+        </nav>
+
+        
+
+        <div class="links-of-author motion-element">
+          
+        </div>
+
+        
+        
+
+        
+        
+
+        
+
+
+      </section>
+
+      
+      <!--noindex-->
+        <section class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+              
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#定义"><span class="nav-number">1.</span> <span class="nav-text">定义</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Linux内核中的实现"><span class="nav-number">2.</span> <span class="nav-text">Linux内核中的实现</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#操作链表"><span class="nav-number">3.</span> <span class="nav-text">操作链表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#遍历链表"><span class="nav-number">4.</span> <span class="nav-text">遍历链表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#完整例程"><span class="nav-number">5.</span> <span class="nav-text">完整例程</span></a></li></ol></div>
+            
+
+          </div>
+        </section>
+      <!--/noindex-->
+      
+
+    </div>
+  </aside>
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright" >
+  
+  &copy; 
+  <span itemprop="copyrightYear">2017</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yinn</span>
+</div>
+<div>
+<a href="http://www.miitbeian.gov.cn/">粤ICP备16122416号</a> 
+</div>
+
+
+        
+
+<div class="busuanzi-count">
+
+  <script async src="https://dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+  
+    <span class="site-uv"><i class="fa fa-user"></i><span class="busuanzi-value" id="busuanzi_value_site_uv"></span></span>
+  
+
+  
+    <span class="site-pv"><i class="fa fa-eye"></i><span class="busuanzi-value" id="busuanzi_value_site_pv"></span></span>
+  
+  
+</div>
+
+
+
+        
+      </div>
+    </footer>
+
+    <div class="back-to-top">
+      <i class="fa fa-arrow-up"></i>
+    </div>
+  </div>
+
+  
+
+<script type="text/javascript">
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+  
+
+
+
+
+  
+  <script type="text/javascript" src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script type="text/javascript" src="/lib/fastclick/lib/fastclick.min.js?v=1.0.6"></script>
+
+  
+  <script type="text/javascript" src="/lib/jquery_lazyload/jquery.lazyload.js?v=1.9.7"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+  
+  <script type="text/javascript" src="/lib/fancybox/source/jquery.fancybox.pack.js?v=2.1.5"></script>
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/utils.js?v=5.1.0"></script>
+
+  <script type="text/javascript" src="/js/src/motion.js?v=5.1.0"></script>
+
+
+
+  
+  
+
+  
+  <script type="text/javascript" src="/js/src/scrollspy.js?v=5.1.0"></script>
+<script type="text/javascript" src="/js/src/post-details.js?v=5.1.0"></script>
+
+
+
+  
+
+
+  <script type="text/javascript" src="/js/src/bootstrap.js?v=5.1.0"></script>
+
+
+
+  
+
+
+
+  
+
+
+
+
+	
+
+
+
+
+
+  
+
+
+
+
+
+  
+
+  
+      <!-- UY BEGIN -->
+      <script type="text/javascript" src="http://v2.uyan.cc/code/uyan.js?uid="></script>
+      <!-- UY END -->
+  
+
+
+
+
+  
+  
+
+  
+
+  
+
+  
+
+  
+
+
+</body>
+</html>
