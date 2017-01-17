@@ -1,5 +1,6 @@
 #!/bin/sh
 #You Can set the program name and config file name below:
+
 RED=\\e[1m\\e[31m
 DARKRED=\\e[31m
 GREEN=\\e[1m\\e[32m
